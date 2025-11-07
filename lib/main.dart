@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // Thêm để giới hạn nhập liệu
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(
@@ -7,17 +7,16 @@ void main() {
       theme: ThemeData(
         primarySwatch: Colors.blue,
         appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF42A5F5), // Màu xanh dương nhạt
+          backgroundColor: Color(0xFF42A5F5),
           foregroundColor: Colors.white,
         ),
         fontFamily: 'Roboto',
       ),
-      home: const ManHinhChinh(), 
+      home: const ManHinhChinh(),
     ),
   );
 }
 
-// Hàm điều hướng tới màn hình mới (push)
 void hienThiManHinh(BuildContext context, Widget manHinh) {
   Navigator.push(
     context,
@@ -29,7 +28,6 @@ void hienThiManHinh(BuildContext context, Widget manHinh) {
   );
 }
 
-// Hàm quay về màn hình chính (popUntil isFirst)
 void quayVeManHinhChinh(BuildContext context) {
   Navigator.popUntil(context, (route) {
     return route.isFirst;
@@ -38,7 +36,6 @@ void quayVeManHinhChinh(BuildContext context) {
 
 // ----------------------------------------------------
 // 2. Màn Hình Chính - HOME (Water Tracker)
-// Đã chuyển thành StatefulWidget để quản lý trạng thái
 // ----------------------------------------------------
 
 class ManHinhChinh extends StatefulWidget {
@@ -49,15 +46,15 @@ class ManHinhChinh extends StatefulWidget {
 }
 
 class _ManHinhChinhState extends State<ManHinhChinh> {
-  // 1. Biến trạng thái: Mục tiêu và Lượng đã uống
-  int _mucTieuHangNgay = 2500; // Mục tiêu, có thể được chỉnh sửa
-  int _soLuongNuocDaUong = 1200; // Lượng nước hiện tại
+  // Biến trạng thái: Mục tiêu, Lượng đã uống và Thời gian nhắc nhở
+  int _mucTieuHangNgay = 2500;
+  int _soLuongNuocDaUong = 1200;
+  String _thoiGianNhacNho = '08:00 - 22:00';
 
   // Hàm cập nhật Lượng nước đã uống
   void _themNuoc(int ml) {
     setState(() {
       _soLuongNuocDaUong += ml;
-      // Đảm bảo không vượt quá mục tiêu
       if (_soLuongNuocDaUong > _mucTieuHangNgay) {
         _soLuongNuocDaUong = _mucTieuHangNgay;
       }
@@ -65,16 +62,23 @@ class _ManHinhChinhState extends State<ManHinhChinh> {
     });
   }
 
-  // Hàm cập nhật Mục tiêu hàng ngày (sẽ được truyền vào màn hình B)
+  // Hàm cập nhật Mục tiêu hàng ngày
   void _capNhatMucTieu(int newGoal) {
     setState(() {
       _mucTieuHangNgay = newGoal;
-      // Đảm bảo lượng đã uống không vượt quá mục tiêu mới
       if (_soLuongNuocDaUong > _mucTieuHangNgay) {
         _soLuongNuocDaUong = _mucTieuHangNgay;
       }
     });
     _hienThiThongBao('Mục tiêu mới: $newGoal ml');
+  }
+
+  // Hàm cập nhật Thời gian nhắc nhở
+  void _capNhatThoiGianNhacNho(String newTime) {
+    setState(() {
+      _thoiGianNhacNho = newTime;
+    });
+    _hienThiThongBao('Thời gian nhắc nhở mới: $newTime');
   }
 
   // Hàm hiển thị SnackBar
@@ -90,8 +94,8 @@ class _ManHinhChinhState extends State<ManHinhChinh> {
   @override
   Widget build(BuildContext context) {
     // Tính toán tiến độ
-    double progress = _soLuongNuocDaUong / _mucTieuHangNgay;
-    if (progress > 1.0) progress = 1.0;
+    // double progress = _soLuongNuocDaUong / _mucTieuHangNgay;
+    // if (progress > 1.0) progress = 1.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -155,12 +159,14 @@ class _ManHinhChinhState extends State<ManHinhChinh> {
             // Nút điều hướng tới màn hình Lịch sử (History Screen)
             ElevatedButton.icon(
               onPressed: () {
-                // Truyền callback cập nhật mục tiêu và giá trị mục tiêu hiện tại qua ManHinhA
+                // Truyền callback và các giá trị state qua ManHinhA
                 hienThiManHinh(
-                  context, 
+                  context,
                   ManHinhA(
                     currentGoal: _mucTieuHangNgay,
                     onGoalUpdated: _capNhatMucTieu,
+                    currentReminderTime: _thoiGianNhacNho,
+                    onReminderTimeUpdated: _capNhatThoiGianNhacNho,
                   ),
                 );
               },
@@ -171,7 +177,7 @@ class _ManHinhChinhState extends State<ManHinhChinh> {
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.white,
-                elevation: 1, 
+                elevation: 1,
                 padding: const EdgeInsets.symmetric(
                   horizontal: 30,
                   vertical: 15,
@@ -187,25 +193,26 @@ class _ManHinhChinhState extends State<ManHinhChinh> {
 
 // ----------------------------------------------------
 // 3. Màn Hình A (History Screen)
-// Cần nhận callback để truyền tiếp xuống ManHinhB
 // ----------------------------------------------------
 
 class ManHinhA extends StatelessWidget {
   final int currentGoal;
   final Function(int) onGoalUpdated;
+  final String currentReminderTime;
+  final Function(String) onReminderTimeUpdated;
 
   const ManHinhA({
     super.key,
     required this.currentGoal,
     required this.onGoalUpdated,
+    required this.currentReminderTime,
+    required this.onReminderTimeUpdated,
   });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('📜 Lịch Sử Uống Nước'),
-      ),
+      appBar: AppBar(title: const Text('📜 Lịch Sử Uống Nước')),
       body: Column(
         children: [
           // Thẻ chứa thông tin thống kê chung
@@ -237,9 +244,24 @@ class ManHinhA extends StatelessWidget {
           Expanded(
             child: ListView(
               children: [
-                _buildHistoryTile('20:30 - Hôm nay', '300 ml', Icons.water_drop, Colors.blue),
-                _buildHistoryTile('18:00 - Hôm nay', '500 ml', Icons.water_drop, Colors.blue),
-                _buildHistoryTile('08:00 - Hôm qua', '400 ml', Icons.water_drop, Colors.blue),
+                _buildHistoryTile(
+                  '20:30 - Hôm nay',
+                  '300 ml',
+                  Icons.water_drop,
+                  Colors.blue,
+                ),
+                _buildHistoryTile(
+                  '18:00 - Hôm nay',
+                  '500 ml',
+                  Icons.water_drop,
+                  Colors.blue,
+                ),
+                _buildHistoryTile(
+                  '08:00 - Hôm qua',
+                  '400 ml',
+                  Icons.water_drop,
+                  Colors.blue,
+                ),
               ],
             ),
           ),
@@ -248,12 +270,14 @@ class ManHinhA extends StatelessWidget {
             padding: const EdgeInsets.only(bottom: 20),
             child: ElevatedButton(
               onPressed: () {
-                // Truyền callback và current goal vào ManHinhB
+                // Truyền callback và current goal/reminder time vào ManHinhB
                 hienThiManHinh(
-                  context, 
+                  context,
                   ManHinhB(
                     currentGoal: currentGoal,
                     onGoalUpdated: onGoalUpdated,
+                    currentReminderTime: currentReminderTime,
+                    onReminderTimeUpdated: onReminderTimeUpdated,
                   ),
                 );
               },
@@ -269,7 +293,7 @@ class ManHinhA extends StatelessWidget {
     );
   }
 
-  // Widget phụ trợ cho mục thống kê (giữ nguyên)
+  // Widget phụ trợ cho mục thống kê
   Widget _buildStatItem(
     String title,
     String value,
@@ -289,7 +313,7 @@ class ManHinhA extends StatelessWidget {
     );
   }
 
-  // Widget phụ trợ cho mục lịch sử (giữ nguyên)
+  // Widget phụ trợ cho mục lịch sử
   Widget _buildHistoryTile(
     String time,
     String amount,
@@ -309,17 +333,20 @@ class ManHinhA extends StatelessWidget {
 
 // ----------------------------------------------------
 // 4. Màn Hình B (Settings Screen)
-// Đã thêm logic chỉnh sửa Mục tiêu
 // ----------------------------------------------------
 
 class ManHinhB extends StatelessWidget {
   final int currentGoal;
   final Function(int) onGoalUpdated;
+  final String currentReminderTime;
+  final Function(String) onReminderTimeUpdated;
 
   const ManHinhB({
     super.key,
     required this.currentGoal,
     required this.onGoalUpdated,
+    required this.currentReminderTime,
+    required this.onReminderTimeUpdated,
   });
 
   @override
@@ -333,13 +360,15 @@ class ManHinhB extends StatelessWidget {
             'Mục tiêu hàng ngày',
             '$currentGoal ml',
             Icons.flag,
-            () => _showGoalEditDialog(context), // Thêm onTap
+            () => _showGoalEditDialog(context),
           ),
-          
+
+          // Thời gian nhắc nhở - Dùng hàm onTap để chỉnh sửa
           _buildSettingsTile(
             'Thời gian nhắc nhở',
-            '08:00 - 22:00',
+            currentReminderTime,
             Icons.alarm,
+            () => _showReminderTimeEditDialog(context),
           ),
           _buildSettingsTile('Ngôn ngữ', 'Tiếng Việt', Icons.language),
 
@@ -381,15 +410,23 @@ class ManHinhB extends StatelessWidget {
     );
   }
 
-  // Widget phụ trợ cho mục cài đặt - Đã thêm optional onTap
-  Widget _buildSettingsTile(String title, String subtitle, IconData icon, [VoidCallback? onTap]) {
+  // Widget phụ trợ cho mục cài đặt
+  Widget _buildSettingsTile(
+    String title,
+    String subtitle,
+    IconData icon, [
+    VoidCallback? onTap,
+  ]) {
     return ListTile(
-      leading: Icon(icon, color: onTap != null ? Colors.blue : Colors.grey.shade600),
+      leading: Icon(
+        icon,
+        color: onTap != null ? Colors.blue : Colors.grey.shade600,
+      ),
       title: Text(title),
       subtitle: Text(subtitle),
       // Hiển thị icon edit nếu có onTap, ngược lại hiển thị mũi tên
       trailing: Icon(
-        onTap != null ? Icons.edit : Icons.arrow_forward_ios, 
+        onTap != null ? Icons.edit : Icons.arrow_forward_ios,
         size: 16,
         color: onTap != null ? Colors.blue : Colors.grey,
       ),
@@ -399,8 +436,10 @@ class ManHinhB extends StatelessWidget {
 
   // Hộp thoại chỉnh sửa mục tiêu
   void _showGoalEditDialog(BuildContext context) {
-    final TextEditingController controller = TextEditingController(text: currentGoal.toString());
-    
+    final TextEditingController controller = TextEditingController(
+      text: currentGoal.toString(),
+    );
+
     showDialog(
       context: context,
       builder: (context) {
@@ -409,7 +448,7 @@ class ManHinhB extends StatelessWidget {
           content: TextField(
             controller: controller,
             keyboardType: TextInputType.number,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly], // Chỉ cho phép nhập số
+            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
             decoration: const InputDecoration(
               hintText: "Nhập mục tiêu (ml)",
               suffixText: 'ml',
@@ -426,8 +465,8 @@ class ManHinhB extends StatelessWidget {
                 final newGoal = int.tryParse(newGoalString);
 
                 if (newGoal != null && newGoal > 0) {
-                  onGoalUpdated(newGoal); // GỌI CALLBACK để cập nhật state ở ManHinhChinh
-                  Navigator.pop(context); // Đóng hộp thoại
+                  onGoalUpdated(newGoal);
+                  Navigator.pop(context);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(content: Text('Mục tiêu không hợp lệ')),
@@ -442,7 +481,119 @@ class ManHinhB extends StatelessWidget {
     );
   }
 
-  // Hiển thị hộp thoại Thông tin nhóm (giữ nguyên)
+  // HỘP THOẠI MỚI: Chỉnh sửa thời gian nhắc nhở
+  void _showReminderTimeEditDialog(BuildContext context) {
+    // Sử dụng StatefulWidget bên trong AlertDialog để quản lý tạm thời TimeOfDay
+    showDialog(
+      context: context,
+      builder: (context) {
+        // Tách chuỗi hiện tại để lấy giờ bắt đầu và kết thúc
+        List<String> parts = currentReminderTime.split(' - ');
+        TimeOfDay startTime = TimeOfDay(
+          hour: int.parse(parts[0].split(':')[0]),
+          minute: int.parse(parts[0].split(':')[1]),
+        );
+        TimeOfDay endTime = TimeOfDay(
+          hour: int.parse(parts[1].split(':')[0]),
+          minute: int.parse(parts[1].split(':')[1]),
+        );
+
+        // Hàm format đơn giản về HH:mm (24h)
+        String formatTime(TimeOfDay time) {
+          final hour = time.hour.toString().padLeft(2, '0');
+          final minute = time.minute.toString().padLeft(2, '0');
+          return '$hour:$minute';
+        }
+
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              title: const Text('⏰ Chỉnh Sửa Thời Gian Nhắc Nhở'),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Bắt đầu
+                  ListTile(
+                    title: const Text('Giờ Bắt Đầu'),
+                    trailing: Text(
+                      formatTime(startTime),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    onTap: () async {
+                      TimeOfDay? picked = await showTimePicker(
+                        context: context,
+                        initialTime: startTime,
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          startTime = picked;
+                        });
+                      }
+                    },
+                  ),
+                  // Kết thúc
+                  ListTile(
+                    title: const Text('Giờ Kết Thúc'),
+                    trailing: Text(
+                      formatTime(endTime),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
+                    onTap: () async {
+                      TimeOfDay? picked = await showTimePicker(
+                        context: context,
+                        initialTime: endTime,
+                      );
+                      if (picked != null) {
+                        setState(() {
+                          endTime = picked;
+                        });
+                      }
+                    },
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Hủy'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    // Kiểm tra logic thời gian (Bắt đầu không thể sau Kết thúc)
+                    if (startTime.hour > endTime.hour ||
+                        (startTime.hour == endTime.hour &&
+                            startTime.minute >= endTime.minute)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Giờ bắt đầu phải trước giờ kết thúc!'),
+                        ),
+                      );
+                      return;
+                    }
+
+                    String newReminderTime =
+                        '${formatTime(startTime)} - ${formatTime(endTime)}';
+
+                    onReminderTimeUpdated(newReminderTime); // GỌI CALLBACK
+                    Navigator.pop(context);
+                  },
+                  child: const Text('Lưu'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // Hiển thị hộp thoại Thông tin nhóm
   void _showAboutDialog(BuildContext context) {
     showDialog(
       context: context,
