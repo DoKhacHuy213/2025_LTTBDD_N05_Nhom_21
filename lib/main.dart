@@ -43,15 +43,41 @@ void quayVeManHinhChinh(BuildContext context) {
   });
 }
 
+// Hằng số cho mục tiêu nước uống
+const int MUC_TIEU = 2500;
 // ----------------------------------------------------
 // 2. Màn Hình Chính - HOME (Theo dõi lượng nước)
+// CHUYỂN TỪ StatelessWidget SANG StatefulWidget
 // ----------------------------------------------------
 
-class ManHinhChinh extends StatelessWidget {
+class ManHinhChinh extends StatefulWidget {
   const ManHinhChinh({super.key});
 
   @override
+  State<ManHinhChinh> createState() => _ManHinhChinhState();
+}
+
+class _ManHinhChinhState extends State<ManHinhChinh> {
+  // 1. Biến trạng thái để lưu lượng nước đã uống (Khởi tạo bằng 1200 như trong code cũ)
+  int _soLuongNuocDaUong = 1200;
+
+  // Hàm xử lý khi nhấn nút Thêm nước
+  void _themNuoc(int ml) {
+    setState(() {
+      _soLuongNuocDaUong += ml;
+      // Giới hạn không cho vượt quá mục tiêu
+      if (_soLuongNuocDaUong > MUC_TIEU) {
+        _soLuongNuocDaUong = MUC_TIEU;
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    // Tính toán tiến độ
+    double progress = _soLuongNuocDaUong / MUC_TIEU;
+    if (progress > 1.0) progress = 1.0; // Đảm bảo không vượt quá 100%
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('💧 Water Tracker'),
@@ -62,12 +88,13 @@ class ManHinhChinh extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Mục tiêu: 2500 ml',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w300),
+            Text(
+              'Mục tiêu: $MUC_TIEU ml',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w300),
             ),
             const SizedBox(height: 30),
 
+            // 2. Vòng tròn tiến độ
             Container(
               width: 200,
               height: 200,
@@ -75,11 +102,12 @@ class ManHinhChinh extends StatelessWidget {
                 shape: BoxShape.circle,
                 border: Border.all(color: Colors.blue.shade100, width: 20),
               ),
-              child: const Center(
+              child: Center(
                 child: Text(
-                  '1200 / 2500 ml',
+                  // Cập nhật hiển thị bằng biến trạng thái
+                  '$_soLuongNuocDaUong / $MUC_TIEU ml',
                   textAlign: TextAlign.center,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 22,
                     fontWeight: FontWeight.bold,
                     color: Color(0xFF42A5F5),
@@ -90,10 +118,16 @@ class ManHinhChinh extends StatelessWidget {
 
             const SizedBox(height: 30),
 
+            // 3. Nút Thêm 300ml - ĐÃ THAY ĐỔI onPressed
             FloatingActionButton.extended(
               onPressed: () {
-                // Giả lập thêm 300ml
-                // Trong thực tế sẽ cần StatefulWidget để cập nhật số liệu
+                _themNuoc(300); // Gọi hàm cập nhật trạng thái
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Đã thêm 300 ml nước!'),
+                    duration: Duration(milliseconds: 500),
+                  ),
+                );
               },
               label: const Text('Thêm 300 ml'),
               icon: const Icon(Icons.add_circle_outline),
@@ -135,6 +169,8 @@ class ManHinhChinh extends StatelessWidget {
     );
   }
 }
+
+// Giữ nguyên các lớp còn lại...
 
 class ManHinhA extends StatelessWidget {
   const ManHinhA({super.key});
@@ -339,8 +375,7 @@ class ManHinhB extends StatelessWidget {
               children: <Widget>[
                 Text('Ứng dụng "Water Tracker" được phát triển bởi:'),
                 SizedBox(height: 10),
-                Text('• Thành viên 1:Đỗ Khắc Huy(Leader)'),
-
+                Text('• Thành viên 1: Đỗ Khắc Huy (Leader)'),
                 SizedBox(height: 10),
                 Text('Phiên bản: 1.0.0'),
               ],
